@@ -5,9 +5,11 @@ var fs = require('fs');
 var path = require('path');
 
 var User = require('../models/user');
+var Codigo = require('../models/codigo');
 var Follow = require('../models/follow');
 var Publication = require('../models/publication');
 var jwt  = require('../services/jwt');
+var moment = require('moment');
 
 function home (req, res)  {
     res.status(200).send({
@@ -22,54 +24,124 @@ function pruebas(req, res){
     })
 };
 
-
+// 200 ESE USUARIO YA EXISTE
+// 500 Error de la peticion
 // M1 Registro
 function saveUser(req, res){
     var params = req.body;
     var user = new User();
-    if(params.name && params.lastname &&
-        params.nickname && params.email && params.password){
-
+    if(params.name && params.email && params.password){
             user.name = params.name;
-            user.lastname = params.lastname;
-            user.nickname = params.nickname;
+            user.lastname = "";
+            user.nickname = "";
             user.email    = params.email;
-            user.role     = 'ROLE_USER';
+            user.role     = params.role;
+            user.codigo   = params.codigo; 
             user.image    = null;
+            user.genero   = params.genero; //M:Mujer  ; H:Hombre
             //
             User.find({ $or: [
-                            {email: user.email.toLowerCase()},
-                            {nickname: user.nickname.toLowerCase()} 
+                {email: user.email.toLowerCase()}
+                //, {nickname: user.nickname.toLowerCase()} 
             ]}).exec((err, users) => {
-                if(err) return res.status(500).send({message:'Error de la peticion'});
+                if(err) return res.status(500).send({message:'Error de la peticion', status:2});
                 if(users && users.length >= 1){
-                    return res.status(200).send({message:'El usuario que intenta registrar ya existe'});
-                }else{
-                         //Cifrar la contrase'a
+                    return res.status(200).send({
+                        message:'Este correo ya existe', status:4});
+                }else{  
                     
+                    if (user.genero == 'H') {
+                        verifyCode(user.codigo,function(count){
+                            if(count >= 1){
+                            //Cifrar la contrasena
+                            bcrypt.hash(params.password, null, null, (err, hash)=> {
+                                user.password = hash;
+                                user.save((err, userStored) => {
+                                    if(err) return res.status(500).send(
+                                        {message:'Error al guardar el usuario', status:9});
+                                    
+                                    if(userStored){
+                                        res.status(200).send({user: userStored, status:1});
+                                    }else{
+                                        res.status(200).send({message:'No se ha registrado',status:2});
+                                    }
+                                });
+                            });
+                            }else{
+                                res.status(200).send({user: "Ese codigo no existe", status:7});
+                            }
+                            
+                        });
+                    }else{// Almacena cuando sea Mujer
                         bcrypt.hash(params.password, null, null, (err, hash)=> {
                             user.password = hash;
-
                             user.save((err, userStored) => {
-                                if(err) return res.status(500).send({message:'Error al guardar el usuario'});
+                                if(err) return res.status(500).send({message:'Error al guardar el usuario', status:9});
                                 
                                 if(userStored){
-                                    res.status(200).send({user: userStored});
+                                    res.status(200).send({user: userStored, status:1});
                                 }else{
-                                    res.status(404).send({message:'No se ha registrado'});
+                                    res.status(200).send({message:'No se ha registrado',status:2});
                                 }
                             });
                         });
-                        
+                    }
                 }
             });
         
     }else{
         res.status(200).send({
-            message:'Envia todos los campos necesarios'
+            message:'Envia todos los campos necesarios', status:8
         });
     }
 }
+//collection.estimatedDocumentCount
+       async function verifyCode(codigo, callback){
+           let query ={'code':codigo ,'estado':1};
+           let set   = {$set:{'estado':0 , 'date':  moment().unix()}}
+        const result = await Codigo.update(query, set).exec((err , res)=>{
+            if(err) return res.status(500).send({message: 'Error al comprobar el seguimiento CU-M4-2', status:5});
+            let vres = res.nModified; 
+            callback(vres);
+            //WriteResult({ "nMatched" : 3, "nUpserted" : 0, "nModified" : 3 })
+            //return res.status(200).send({vres});
+        });
+
+
+/*
+        Codigo.find(query).count()
+        .exec()
+        .then((err, res)=>{
+            console.log(res);
+        });
+*/
+
+        //return codigo + "modificado";
+         /*
+         Codigo.find({"code":codigo.trim() ,"estado":1},function(err,follow){
+            console.log("1 sdsd " +follow)
+            callback(follow) ;
+          }); */
+    }
+   
+    /*
+    async function followThisUser(identity_user_id, user_id){
+   /*
+   var following = await Follow.findOne({"user":identity_user_id, "followed":user_id})
+   .exec()
+   .then((err, follows) => {
+
+   })
+   .catch((err) => {
+       return handleError(err);
+   });
+   
+
+   var following = await Follow.findOne({"user":identity_user_id, "followed":user_id},function(err,follow){
+    return follow;
+  });
+    
+    */
 //M2 Login
 function loginUser(req, res){
     var params = req.body;
@@ -78,13 +150,11 @@ function loginUser(req, res){
     
     User.findOne({email:email}, (err, user)=>{
         if(err) return res.status(500).send({message:'Error en la peticion'});
-       
         if(user){
             bcrypt.compare(password, user.password, (err,check)=>{
                 if(check){
                     
                     if(params.gettoken){
-                        console.log('tiene token',user);
                         /*if(gettoken != null){
                             user.token =  jwt.createToken(user);
                             user = Object.assign(user, {gettoken});
@@ -248,12 +318,12 @@ async function followUserIds(user_id) {
         .catch((err) => {
             return handleError(err);
         });
-
     return {
         following: following,
         followed: followed
     };
 }
+
 // El numeros de seguidores y personas que sigo tengo
 function getCounters(req, res){
     let userId = req.params.id;
