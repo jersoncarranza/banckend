@@ -2,9 +2,9 @@
   "name": "social",
   "version": "0.0.1",
   "description": "Backend el proyecto Red Social",
-  "main": "indes.js\u001b[D\u001b[D\u001b[D\u001b[D\u001b[x",
+  "main": "index.js\u001b[D\u001b[D\u001b[D\u001b[D\u001b[x",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "npm start",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jerson Carranza",
