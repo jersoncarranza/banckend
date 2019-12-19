@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 var mongoose =  require('mongoose');
 var Schema = mongoose.Schema;
@@ -12,7 +12,9 @@ var UserSchema = Schema ({
     image: String,
     email: String,
     codigo: String,
-    genero:String
+    genero:String,
+    estado: Number, // 1 Activo ; 0 Desactivado,
+    entidad: {type: Schema.ObjectId, ref:'entidade'}//
 });
 
 module.exports = mongoose.model('User', UserSchema);

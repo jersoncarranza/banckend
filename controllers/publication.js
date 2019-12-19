@@ -36,16 +36,25 @@ function savePublication(req,res){
 
 function getPublications(req, res){
     var page = 1;
+    console.log('params '+req.params);
+    console.log('body '+req.body);
+    console.log(' req.user.sub '+ req.user.sub);
+
+   
+
     if(req.params.page){
         page = req.params.page;
     }
     var itemsPerPage = 4;
     var follows_clean = [];
-    Follow.find({"user": req.user.sub}).populate('followed').exec().then((follows)=>{  
-        for (let i in follows) {
-            follows_clean.push(follows[i].followed._id);
-        } 
-        follows_clean.push(req.user.sub);
+    Follow.find({"user": req.user.sub})
+          //.populate('followed')
+          .exec()
+          .then((follows)=>{  
+                for (let i in follows) {
+                    follows_clean.push(follows[i].followed._id);
+                } 
+                follows_clean.push(req.user.sub);
         //    var o_id = ['5d56d6f4d985e368f85265cc','5d56ea3b42145962bc68e55b'];
         //Publication.find({user:o_id}).sort('created_at').populate('user').paginate(page, itemsPerPage,(err, publications, total)=>{
         //Publication.find({user:o_id}).then((err,publications)=>{
@@ -70,7 +79,6 @@ function getPublications(req, res){
 
 function getPublicationsUser(req, res){
     
-    console.log(req.params.id + ' '+ req.params.page);
     var page = 1;
     var user_id;
     if(req.params.page){

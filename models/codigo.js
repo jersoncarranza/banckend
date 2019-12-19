@@ -11,7 +11,8 @@ var CodigoSchema = Schema ({
     date: String,
     correo_peticion: String,
     descripcion: String,
-    file:String
+    file:String,
+    enabled:Boolean
 });
 
 module.exports = mongoose.model('Codigo', CodigoSchema);

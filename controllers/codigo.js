@@ -1,11 +1,11 @@
-'use strict'
+'use strict';
 var Codigo = require('../models/codigo');
 var path = require('path');
 var fs  = require('fs');
+var moment = require('moment');
 /***DETALLE****/
-// Estado 2 => Se genero el codigo y hay que chequear la transaccion
-// Estado 1 => Se envio el codigo al correo
-// Estado 0 => EL usuario ingreso el codigo
+//Estado 0 => Ya ocupo el codigo
+//Estado 1 => Es un usuario que puede REGISTRARSE(Siempre y cunado Enabled  = TRUE)
 /*****Almacenar la captura de transaccion***/
 function saveCodigo (req, res)  {
     var params = req.body;
@@ -13,8 +13,10 @@ function saveCodigo (req, res)  {
         var codigo = new Codigo();
         codigo.correo_peticion = params.correoPeticion;
         codigo.descripcion = params.descripcion;
-        codigo.estado = 2;
+        codigo.estado = 1;
         codigo.tipo = 'T';
+        codigo.enabled = false;
+        codigo.date= moment().unix();
         codigo.code = codeAleatorio();
         codigo.save((err, codeStored)=>{
            // if(err) res.status(500).send( {message:'Error al generar el codigo', status:9});
@@ -35,7 +37,7 @@ function codeAleatorio(){
     }
 
 
-/**Subir imagen***/
+/**Subir imagen  Modificar***/
 function uploadImagePay(req, res){
     var payId = req.params.id;
     if(req.files){
@@ -49,7 +51,7 @@ function uploadImagePay(req, res){
             Codigo.findOne({'_id': payId}).exec((err, publicationStore) =>{
                 if(publicationStore){
                     // Actualizar documento de la publication
-                    Codigo.findByIdAndUpdate(payId, {file:file_name}, 
+                    Codigo.findByIdAndUpdate(payId, {file:file_name, date: moment().unix()}, 
                         {new: true},
                         (err, payUpdated) =>{
                             if(err) return res.status(500).send({message:'No tienes permiso para actualizar los datos del usuario',status:5})
@@ -75,8 +77,67 @@ function removeFilesOfUploads(res, file_path, message){
         return res.status(200).send({message:message, status:2});
     });
 }
+/*Obtener  lista */
+function getUsuarioCodigo(req,res){
+    var page = 1;
+    if(req.params.page){ page = req.params.page;}
+    var itemsPerPage = 10;
+  //  Publication.find({user:user_id}).sort('-created_at').populate('user').paginate(page, itemsPerPage,(err, publications, total)=>{
+  // User.find().sort('_id').paginate(page, itemsPerPage,(err, users, total)=>{
+  
+    Codigo.find().sort('date').paginate(page, itemsPerPage,(err, userCodigo, total)=>{ //, (err, userCodigo)=>{
+        if(err) return res.status(404).send({message:'Error devolver publicaciones'+err,status:2});
+        if(!userCodigo) return res.status(500).send({message:'No hay publicaciones',status:2});
+    
+        return res.status(200).send( {
+            total_items: total,
+            pages: Math.ceil(total/itemsPerPage),
+            page:page,
+            itemsPerPage:itemsPerPage, 
+            users:userCodigo,
+            status:1
+            }
+        )    
+    });  
+}
+
+
+//Obtener una imagen
+function getImagePago(req, res){
+    var image_file = req.params.imageFile;
+    var path_file  = './uploads/pagos/' + image_file;
+
+    fs.exists(path_file, (exists) =>{
+        if(exists){
+            res.sendFile(path.resolve(path_file));
+        }else{
+            res.status(200).send({message:'No existe la imagen'});
+        }
+    });
+}
+//Editar Estado  del pago
+function putEstadoPago(req, res){
+    var params  = req.body;
+  
+    var _enabled= params.enabled;
+    var _id     = params._id;
+            // Actualizar documento de la publication
+    Codigo.findByIdAndUpdate(_id, {enabled:_enabled}, 
+        {new: true},
+        (err, payUpdated) =>{
+            if(err) return res.status(200).send({message:'No tienes permiso para actualizar',status:5})
+            if(!payUpdated) return res.status(200).send({message:'No se ha podido actualizar el estado del pago',status:2});
+    
+            return res.status(200).send({message:payUpdated, status:1});
+        });
+}
+
+
 
 module.exports = {
     saveCodigo,
-    uploadImagePay
+    uploadImagePay,
+    getUsuarioCodigo,
+    getImagePago,
+    putEstadoPago
 }
