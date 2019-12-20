@@ -14,7 +14,8 @@ var server  = http.createServer(app);
 
 mongoose.Promise = global.Promise;
 
-const uri = "mongodb+srv://"+ conf.db.user+":"+ conf.db.password +"@"+conf.db.host+".azure.mongodb.net/test?retryWrites=true&w=majority";
+//const uri = "mongodb+srv://"+ conf.db.user+":"+ conf.db.password +"@"+conf.db.host+".azure.mongodb.net/test?retryWrites=true&w=majority";
+const uri= "mongodb+srv://boom:t3tjBtScoliOHf8e@clusterboom-9u5xr.azure.mongodb.net/test?retryWrites=true&w=majority";
 mongoose.connect(uri,{ useNewUrlParser: true })
 .then(() => {
     console.log("La conexion a la base de datos es realizado con exito");
@@ -22,3 +23,6 @@ mongoose.connect(uri,{ useNewUrlParser: true })
       );
 })
 .catch(err => console.log(err));
+
+//mongodb+srv://boom:<password>@clusterboom-9u5xr.azure.mongodb.net/test?retryWrites=true&w=majority
+//MongoNetworkError: failed to connect to server [clusterboom-shard-00-02-9u5xr.azure.mongodb.net:27017] on first connect [MongoNetworkError: connection 4 to clusterboom-shard-00-02-9u5xr.azure.mongodb.net:27017 closed
