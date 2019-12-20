@@ -4,8 +4,8 @@
   "description": "Backend el proyecto Red Social",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
-    "backend":"nodemon index.js",
+    "start": "node index.js",
+    "backend":"node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

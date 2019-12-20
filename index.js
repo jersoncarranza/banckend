@@ -2,6 +2,7 @@
 var http	    = require('http');
 var mongoose    = require('mongoose');
 var PORT        =  process.env.PORT || 3800;
+var server_host = process.env.YOUR_HOST || '0.0.0.0';
 var conf    = require('./conf.json');
 var app      = require('./app');
 //var appserver     = new app();
@@ -17,18 +18,7 @@ const uri = "mongodb+srv://"+ conf.db.user+":"+ conf.db.password +"@"+conf.db.ho
 mongoose.connect(uri,{ useNewUrlParser: true })
 .then(() => {
     console.log("La conexion a la base de datos es realizado con exito");
-    server.listen(PORT);
-    //, () => {console.log(`Listening on ${ PORT }`)    }
+    server.listen(PORT , server_host, function () {console.log(`Listening on ${ PORT }`) }
+      );
 })
 .catch(err => console.log(err));
-//mongoose.connect(uristring , {  useMongoClient: true })
-
-/*
-const MongoClient = require('mongodb').MongoClient;
-const uri = "mongodb+srv://boom:"+ conf.db.password +"@clusterboom-9u5xr.azure.mongodb.net/test?retryWrites=true&w=majority";
-const client = new MongoClient(uri, { useNewUrlParser: true });
-client.connect(err => {
-  const collection = client.db("test").collection("devices");
-  client.close();
-});
-*/
