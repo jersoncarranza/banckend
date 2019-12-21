@@ -210,34 +210,14 @@ function getUsers(req, res){
     var genero = req.user.genero; 
     var role   = req.user.role;
     var page = 1;
-    if(req.params.page){
-        page= req.params.page;
-    }
-    
     var itemsPerPage = 5;
-    if(role == 'ADMIN'){
-        User.find().sort('_id').paginate(page, itemsPerPage,(err, users, total)=>{
-            if(err) return res.status(500).send({message: 'Error de la peticion'});
-            if(!users) return res.status(404).send({message:'No hay usuarios disponibles'});
-            
-            followUserIds(identity_user_id).then((value) => {
-                return res.status(200).send({
-                    users,
-                    users_following: value.following,
-                    users_follow_me: value.followed,
-                    total:total ,
-                    pages: Math.ceil(total/itemsPerPage)
-                });
-            });
-        });
-    };
-    
+
     let query;
-    if(genero == 'H'){
-        query ={'genero':'M'};
-    }else{
-        query ={'genero':'H'};
-    };
+    if(req.params.page){    page= req.params.page; };
+    if(genero == 'H'){ query ={'genero':'M'}; };
+    if(genero == 'M'){ query ={'genero':'H'};};
+    if(role == 'ADMIN'){  query ={}};  
+
         User.find(query).sort('_id').paginate(page, itemsPerPage,(err, users, total)=>{
             if(err) return res.status(500).send({message: 'Error de la peticion'});
             if(!users) return res.status(404).send({message:'No hay usuarios disponibles'});
@@ -257,7 +237,8 @@ function getUsers(req, res){
 
 }
 async function followUserIds(user_id) {
-    var following = await Follow.find({ user: user_id }).select({ _id: 0, __v: 0, user: 0 })
+    var following = await Follow.find({ user: user_id })
+        .select({ _id: 0, __v: 0, user: 0 })
         .exec()
         .then((follows) => {
             var follows_clean = [];
@@ -266,9 +247,7 @@ async function followUserIds(user_id) {
             });
             return follows_clean;
         })
-        .catch((err) => {
-            return handleError(err);
-        });
+        .catch((err) => { return handleError(err);});
 
     var followed = await Follow.find({ followed: user_id }).select({ _id: 0, __v: 0, followed: 0 })
         .exec()
@@ -279,9 +258,7 @@ async function followUserIds(user_id) {
             });
             return follows_clean;
         })
-        .catch((err) => {
-            return handleError(err);
-        });
+        .catch((err) => { return handleError(err); });
     return {
         following: following,
         followed: followed
@@ -359,7 +336,7 @@ function updateUser(req, res){
 
         //if(users._id != userId){  res.status(500).send({message:'Los datos ya estan en uso'});
         
-        User.findByIdAndUpdate(userId, update,{new:true}, (err, userUpdated) =>{
+        User.findOneAndUpdate({_id:userId}, update,{new:true}, (err, userUpdated) =>{
             if(err) return res.status(505).send({message:'No tienes permiso para actualizar los datos del usuario'});
             if(!userUpdated) return res.status(404).send({message:'No se ha podido actualizar el usuario'});
     
